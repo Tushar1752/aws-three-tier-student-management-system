@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
-
+const filesRouter = require("./files");
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/files", filesRouter);
 
 // GET - Fetch all students
 app.get("/students", async (req, res) => {

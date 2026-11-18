@@ -1,198 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Management System</title>
-<style>
-* {
-    box-sizing: border-box;
-}
-body {
-    margin: 0;
-    padding: 30px;
-    font-family: Arial, sans-serif;
-    background: #f1f5f9;
-    color: #1e293b;
-}
-.container {
-    max-width: 900px;
-    margin: auto;
-}
-h1 {
-    color: #1d4ed8;
-}
-.card {
-    background: white;
-    padding: 25px;
-    margin: 20px 0;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px #00000010;
-}
-input {
-    padding: 12px;
-    margin: 6px 5px 6px 0;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-}
-button {
-    padding: 11px 16px;
-    border: none;
-    border-radius: 6px;
-    background: #2563eb;
-    color: white;
-    cursor: pointer;
-}
-.delete {
-    background: #dc2626;
-}
-.edit {
-    background: #16a34a;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th, td {
-    padding: 13px;
-    text-align: left;
-    border-bottom: 1px solid #e2e8f0;
-}
-th {
-    background: #eff6ff;
-}
-#message {
-    margin-top: 12px;
-    font-weight: bold;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #1d4ed8;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+
+        input {
+            padding: 12px;
+            margin: 6px 5px 6px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        .delete {
+            background: #dc2626;
+        }
+
+        .edit {
+            background: #16a34a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 13px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #eff6ff;
+        }
+
+        #message,
+        #fileMessage {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+    </style>
 </head>
+
 <body>
-<div class="container">
-<h1>Student Management System</h1>
-<p>Manage student records using AWS Three-Tier Architecture.</p>
-<div class="card">
-    <h2 id="formTitle">Add New Student</h2>
-<form id="studentForm">
-    <input type="text" id="name" placeholder="Student Name" required>
-    <input type="text" id="course" placeholder="Course" required>
-    <button type="submit" id="submitBtn">Add Student</button>
-    <button type="button" id="cancelBtn" hidden>Cancel</button>
-</form>
-<p id="message"></p>
-</div>
-<div class="card">
-    <h2>All Students</h2>
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Course</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody id="studentList"></tbody>
-</table>
-</div>
-</div>
-<script>
-const API = "/api/students";
-let editingId = null;
-const form = document.getElementById("studentForm");
-const nameInput = document.getElementById("name");
-const courseInput = document.getElementById("course");
-const studentList = document.getElementById("studentList");
-const message = document.getElementById("message");
-async function loadStudents() {
-    try {
-        const response = await fetch(API);
-        if (!response.ok) throw new Error("Unable to fetch students");
-        const students = await response.json();
-        studentList.replaceChildren();
-        students.forEach(student => {
-            const row = document.createElement("tr");
-            [student.id, student.name, student.course].forEach(value => {
-                const cell = document.createElement("td");
-                cell.textContent = value;
-                row.appendChild(cell);
-            });
-            const actions = document.createElement("td");
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.className = "edit";
-            editBtn.onclick = () => editStudent(student);
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "Delete";
-            deleteBtn.className = "delete";
-            deleteBtn.style.marginLeft = "5px";
-            deleteBtn.onclick = () => deleteStudent(student.id);
-            actions.append(editBtn, deleteBtn);
-            row.appendChild(actions);
-            studentList.appendChild(row);
-        });
-    } catch (error) {
-        message.textContent = error.message;
-    }
-}
-form.addEventListener("submit", async event => {
-    event.preventDefault();
-    const student = {
-        name: nameInput.value.trim(),
-        course: courseInput.value.trim()
-    };
-    if (!student.name || !student.course) return;
-    try {
-        const response = await fetch(
-            editingId ? `${API}/${editingId}` : API,
-            {
-                method: editingId ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(student)
+    <div class="container">
+        <h1>Student Management System</h1>
+        <p>Manage student records and files using AWS Three-Tier Architecture.</p>
+        <div class="card">
+            <h2 id="formTitle">Add New Student</h2>
+            <form id="studentForm">
+                <input type="text" id="name" placeholder="Student Name" required>
+                <input type="text" id="course" placeholder="Course" required>
+                <button type="submit" id="submitBtn">Add Student</button>
+                <button type="button" id="cancelBtn" hidden>Cancel</button>
+            </form>
+            <p id="message"></p>
+        </div>
+        <div class="card">
+            <h2>All Students</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Course</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="studentList"></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h2>Student File Management</h2>
+            <form id="fileForm">
+                <input type="number" id="studentId" placeholder="Student ID (optional)">
+                <br><br>
+                <input type="file" id="fileInput" required>
+                <button type="submit">Upload to S3</button>
+            </form>
+            <p id="fileMessage"></p>
+        </div>
+        <div class="card">
+            <h2>Uploaded Files (Amazon S3)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File ID</th>
+                        <th>File Name</th>
+                        <th>Student ID</th>
+                        <th>Size</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="fileList"></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        const API = "/api/students";
+        const FILE_API = "/api/files";
+        let editingId = null;
+        const form = document.getElementById("studentForm");
+        const nameInput = document.getElementById("name");
+        const courseInput = document.getElementById("course");
+        const studentList = document.getElementById("studentList");
+        const message = document.getElementById("message");
+        async function loadStudents() {
+            try {
+                const response = await fetch(API);
+                if (!response.ok) throw new Error("Unable to fetch students");
+                const students = await response.json();
+                studentList.replaceChildren();
+                students.forEach(student => {
+                    const row = document.createElement("tr");
+                    [student.id, student.name, student.course].forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
+                    const actions = document.createElement("td");
+                    const editBtn = document.createElement("button");
+                    editBtn.textContent = "Edit";
+                    editBtn.className = "edit";
+                    editBtn.onclick = () => editStudent(student);
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.className = "delete";
+                    deleteBtn.style.marginLeft = "5px";
+                    deleteBtn.onclick = () => deleteStudent(student.id);
+                    actions.append(editBtn, deleteBtn);
+                    row.appendChild(actions);
+                    studentList.appendChild(row);
+                });
+            } catch (error) {
+                message.textContent = error.message;
             }
-        );
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message || result.error || "Operation failed");
-        message.textContent = editingId
-            ? "Student updated successfully!"
-            : "Student added successfully!";
-        resetForm();
-        loadStudents();
-    } catch (error) {
-        message.textContent = error.message;
-    }
-});
-function editStudent(student) {
-    editingId = student.id;
-    nameInput.value = student.name;
-    courseInput.value = student.course;
-    document.getElementById("formTitle").textContent = "Update Student";
-    document.getElementById("submitBtn").textContent = "Update Student";
-    document.getElementById("cancelBtn").hidden = false;
-}
-async function deleteStudent(id) {
-    if (!confirm("Are you sure you want to delete this student?")) return;
-    try {
-        const response = await fetch(`${API}/${id}`, {
-            method: "DELETE"
+        }
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+            const student = {
+                name: nameInput.value.trim(),
+                course: courseInput.value.trim()
+            };
+            try {
+                const response = await fetch(
+                    editingId ? `${API}/${editingId}` : API,
+                    {
+                        method: editingId ? "PUT" : "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(student)
+                    }
+                );
+                const result = await response.json();
+                if (!response.ok)
+                    throw new Error(result.message || result.error);
+                message.textContent = editingId
+                    ? "Student updated successfully!"
+                    : "Student added successfully!";
+                resetForm();
+                loadStudents();
+            } catch (error) {
+                message.textContent = error.message;
+            }
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message || result.error);
-        message.textContent = "Student deleted successfully!";
+        function editStudent(student) {
+            editingId = student.id;
+            nameInput.value = student.name;
+            courseInput.value = student.course;
+            document.getElementById("formTitle").textContent = "Update Student";
+            document.getElementById("submitBtn").textContent = "Update Student";
+            document.getElementById("cancelBtn").hidden = false;
+        }
+        async function deleteStudent(id) {
+            if (!confirm("Are you sure you want to delete this student?")) return;
+            try {
+                const response = await fetch(`${API}/${id}`, {
+                    method: "DELETE"
+                });
+                const result = await response.json();
+                if (!response.ok)
+                    throw new Error(result.message || result.error);
+                message.textContent = "Student deleted successfully!";
+                loadStudents();
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        }
+        function resetForm() {
+            editingId = null;
+            form.reset();
+            document.getElementById("formTitle").textContent = "Add New Student";
+            document.getElementById("submitBtn").textContent = "Add Student";
+            document.getElementById("cancelBtn").hidden = true;
+        }
+        // S3 FILE MANAGEMENT
+        const fileForm = document.getElementById("fileForm");
+        const fileInput = document.getElementById("fileInput");
+        const fileMessage = document.getElementById("fileMessage");
+        const fileList = document.getElementById("fileList");
+        fileForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const selectedFile = fileInput.files[0];
+            if (!selectedFile) return;
+            const data = new FormData();
+            data.append("file", selectedFile);
+            const studentId = document.getElementById("studentId").value;
+            if (studentId) data.append("student_id", studentId);
+            try {
+                fileMessage.textContent = "Uploading file...";
+                const response = await fetch(FILE_API, {
+                    method: "POST",
+                    body: data
+                });
+                const result = await response.json();
+                if (!response.ok)
+                    throw new Error(result.error || "Upload failed");
+                fileMessage.textContent = "File uploaded successfully to S3!";
+                fileForm.reset();
+                loadFiles();
+            } catch (error) {
+                fileMessage.textContent = error.message;
+            }
+        });
+        async function loadFiles() {
+            try {
+                const response = await fetch(FILE_API);
+                if (!response.ok) throw new Error("Unable to fetch files");
+                const files = await response.json();
+                fileList.replaceChildren();
+                files.forEach(file => {
+                    const row = document.createElement("tr");
+                    const values = [
+                        file.id,
+                        file.original_name,
+                        file.student_id || "-",
+                        (file.size_bytes / 1024).toFixed(2) + " KB"
+                    ];
+                    values.forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
+                    const actions = document.createElement("td");
+                    const downloadBtn = document.createElement("button");
+                    downloadBtn.textContent = "Download";
+                    downloadBtn.onclick = () => downloadFile(file.id);
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.className = "delete";
+                    deleteBtn.style.marginLeft = "5px";
+                    deleteBtn.onclick = () => deleteFile(file.id);
+                    actions.append(downloadBtn, deleteBtn);
+                    row.appendChild(actions);
+                    fileList.appendChild(row);
+                });
+            } catch (error) {
+                fileMessage.textContent = error.message;
+            }
+        }
+        async function downloadFile(id) {
+            try {
+                const response = await fetch(`${FILE_API}/${id}/download`);
+                const result = await response.json();
+                if (!response.ok)
+                    throw new Error(result.error || "Download failed");
+                window.location.href = result.downloadUrl;
+            } catch (error) {
+                fileMessage.textContent = error.message;
+            }
+        }
+        async function deleteFile(id) {
+            if (!confirm("Delete this file permanently?")) return;
+            try {
+                const response = await fetch(`${FILE_API}/${id}`, {
+                    method: "DELETE"
+                });
+                const result = await response.json();
+                if (!response.ok)
+                    throw new Error(result.error || "Delete failed");
+                fileMessage.textContent = "File deleted successfully!";
+                loadFiles();
+            } catch (error) {
+                fileMessage.textContent = error.message;
+            }
+        }
+        document.getElementById("cancelBtn").onclick = resetForm;
         loadStudents();
-    } catch (error) {
-        message.textContent = error.message;
-    }
-}
-function resetForm() {
-    editingId = null;
-    form.reset();
-    document.getElementById("formTitle").textContent = "Add New Student";
-    document.getElementById("submitBtn").textContent = "Add Student";
-    document.getElementById("cancelBtn").hidden = true;
-}
-document.getElementById("cancelBtn").onclick = resetForm;
-loadStudents();
-</script>
+        loadFiles();
+    </script>
 </body>
+
 </html>
