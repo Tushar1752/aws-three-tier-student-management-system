@@ -8,11 +8,18 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1171.0",
+    "@aws-sdk/client-sesv2": "^3.1172.0",
     "@aws-sdk/s3-request-presigner": "^3.1171.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.10",
     "express": "^5.3.0",
+    "google-auth-library": "^11.3.4",
+    "googleapis": "^190.0.0",
+    "imapflow": "^2.12.1",
+    "mailparser": "^3.14.5",
     "multer": "^2.5.0",
-    "mysql2": "^3.24.6"
+    "mysql2": "^3.24.6",
+    "node-pop3": "^0.15.5",
+    "nodemailer": "^10.6.0"
   }
 }
