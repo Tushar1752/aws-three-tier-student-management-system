@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gmail Management Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#f1f5f9;color:#1e293b}
+header{background:#1d4ed8;color:white;padding:20px}
+.container{max-width:1100px;margin:25px auto;padding:15px}
+.card{background:white;padding:22px;margin-bottom:20px;border-radius:10px;box-shadow:0 2px 10px #0001}
+button{border:0;padding:10px 15px;border-radius:5px;background:#2563eb;color:white;cursor:pointer;margin:4px}
+.delete{background:#dc2626}
+input,textarea{width:100%;padding:11px;margin:7px 0;border:1px solid #cbd5e1;border-radius:5px}
+.email{padding:14px;border-bottom:1px solid #ddd;cursor:pointer}
+.email:hover{background:#eff6ff}
+.small{color:#64748b;font-size:13px}
+#status{font-weight:bold}
+#reader{white-space:pre-wrap;overflow-wrap:anywhere}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<header>
+<h2>Gmail Email Management</h2>
+<p>AWS Three-Tier Student Management System</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+<button onclick="connectGmail()">Connect Gmail</button>
+<button onclick="loadInbox()">Refresh Inbox</button>
+<p id="status">Connect your Gmail account to continue.</p>
+</div>
+
+<div class="card">
+<h3>Compose Email</h3>
+<form id="composeForm">
+<input type="email" id="to" placeholder="Recipient Email" required>
+<input type="text" id="subject" placeholder="Subject" required>
+<textarea id="text" rows="5" placeholder="Write your message..." required></textarea>
+<button type="submit">Send Email</button>
+</form>
+</div>
+
+<div class="card">
+<h3>Inbox</h3>
+<div id="inbox">Connect Gmail to load emails.</div>
+</div>
+
+<div class="card hidden" id="readerCard">
+<h3>Email Details</h3>
+<p><strong>From:</strong> <span id="from"></span></p>
+<p><strong>To:</strong> <span id="recipient"></span></p>
+<p><strong>Subject:</strong> <span id="readSubject"></span></p>
+<p class="small" id="date"></p>
+<hr>
+<div id="reader"></div>
+
+<h3>Reply</h3>
+<textarea id="replyText" rows="3" placeholder="Write your reply..."></textarea>
+<button onclick="replyEmail()">Send Reply</button>
+<button onclick="forwardEmail()">Forward</button>
+<button class="delete" onclick="deleteEmail()">Delete</button>
+</div>
+
+<div class="card hidden" id="forwardCard">
+<h3>Forward Email</h3>
+<input type="email" id="forwardTo" placeholder="Recipient Email">
+<textarea id="forwardText" rows="3" placeholder="Message (optional)"></textarea>
+<button onclick="sendForward()">Send Forward</button>
+<button onclick="document.getElementById('forwardCard').classList.add('hidden')">Cancel</button>
+</div>
+
+</div>
+
+<script>
+const API = "https://api.tushartech.online/email";
+let selectedEmail = null;
+
+function status(message){
+    document.getElementById("status").textContent = message;
+}
+
+function connectGmail(){
+    window.location.href = API + "/auth/google";
+}
+
+async function loadInbox(){
+    try{
+        status("Loading inbox...");
+        const response = await fetch(API + "/inbox?limit=50");
+        const result = await response.json();
+        if(!response.ok) throw new Error(result.error || result.message || "Unable to load inbox");
+
+        const inbox = document.getElementById("inbox");
+        inbox.replaceChildren();
+
+        result.forEach(mail=>{
+            const item = document.createElement("div");
+            item.className = "email";
+
+            const sender = document.createElement("strong");
+            sender.textContent = mail.from || "Unknown sender";
+
+            const subject = document.createElement("div");
+            subject.textContent = mail.subject || "(No subject)";
+
+            const snippet = document.createElement("div");
+            snippet.className = "small";
+            snippet.textContent = mail.snippet || "";
+
+            item.append(sender,subject,snippet);
+            item.onclick = ()=>readEmail(mail.id);
+            inbox.appendChild(item);
+        });
+
+        if(result.length===0) inbox.textContent="No emails found.";
+        status("Inbox loaded successfully.");
+    }catch(error){
+        status(error.message);
+    }
+}
+
+async function readEmail(id){
+    try{
+        const response = await fetch(API + "/" + encodeURIComponent(id));
+        const mail = await response.json();
+        if(!response.ok) throw new Error(mail.error || mail.message || "Unable to read email");
+
+        selectedEmail=id;
+        document.getElementById("from").textContent=mail.from || "";
+        document.getElementById("recipient").textContent=mail.to || "";
+        document.getElementById("readSubject").textContent=mail.subject || "";
+        document.getElementById("date").textContent=mail.date || "";
+        document.getElementById("reader").textContent=mail.body || "";
+
+        document.getElementById("readerCard").classList.remove("hidden");
+        document.getElementById("forwardCard").classList.add("hidden");
+    }catch(error){
+        status(error.message);
+    }
+}
+
+document.getElementById("composeForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    try{
+        const response=await fetch(API+"/send",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                to:document.getElementById("to").value,
+                subject:document.getElementById("subject").value,
+                text:document.getElementById("text").value
+            })
+        });
+        const result=await response.json();
+        if(!response.ok) throw new Error(result.error || result.message || "Send failed");
+
+        status("Email sent successfully!");
+        event.target.reset();
+        loadInbox();
+    }catch(error){
+        status(error.message);
+    }
+});
+
+async function replyEmail(){
+    if(!selectedEmail)return;
+    try{
+        const response=await fetch(API+"/"+encodeURIComponent(selectedEmail)+"/reply",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({text:document.getElementById("replyText").value})
+        });
+        const result=await response.json();
+        if(!response.ok) throw new Error(result.error || result.message || "Reply failed");
+
+        status("Reply sent successfully!");
+        document.getElementById("replyText").value="";
+    }catch(error){
+        status(error.message);
+    }
+}
+
+function forwardEmail(){
+    if(!selectedEmail)return;
+    document.getElementById("forwardCard").classList.remove("hidden");
+}
+
+async function sendForward(){
+    try{
+        const response=await fetch(API+"/"+encodeURIComponent(selectedEmail)+"/forward",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                to:document.getElementById("forwardTo").value,
+                text:document.getElementById("forwardText").value
+            })
+        });
+        const result=await response.json();
+        if(!response.ok) throw new Error(result.error || result.message || "Forward failed");
+
+        status("Email forwarded successfully!");
+        document.getElementById("forwardTo").value="";
+        document.getElementById("forwardText").value="";
+        document.getElementById("forwardCard").classList.add("hidden");
+    }catch(error){
+        status(error.message);
+    }
+}
+
+async function deleteEmail(){
+    if(!selectedEmail || !confirm("Move this email to Trash?"))return;
+    try{
+        const response=await fetch(API+"/"+encodeURIComponent(selectedEmail),{
+            method:"DELETE"
+        });
+        const result=await response.json();
+        if(!response.ok) throw new Error(result.error || result.message || "Delete failed");
+
+        status("Email moved to Trash successfully!");
+        document.getElementById("readerCard").classList.add("hidden");
+        selectedEmail=null;
+        loadInbox();
+    }catch(error){
+        status(error.message);
+    }
+}
+
+</script>
+</body>
+</html>
